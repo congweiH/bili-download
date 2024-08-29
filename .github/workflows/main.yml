@@ -2,7 +2,7 @@ name: 打包部署Vue项目
 on: push
 
 permissions:
-  contents: true
+  contents: write
 
 jobs:
   npm-build:
