@@ -61,16 +61,38 @@ async function getDownloadUrl() {
   return url;
 }
 
+async function download(url: string) {
+  console.log(url);
+    // await fetch(url)
+  const response = await fetch(url);
+  const blob = await response.blob();
+
+  const link = document.createElement('a');
+  // 创建一个对象 URL
+  const objectUrl = URL.createObjectURL(blob);
+  link.href = objectUrl;
+  // 设置下载文件名（从响应头或者URL中获取，或者自定义）
+  link.download = 'video.mp4'; // 这里需要确保文件名和类型匹配
+  // 模拟点击链接进行下载
+  document.body.appendChild(link);
+  link.click();
+  // 清理
+  document.body.removeChild(link);
+  URL.revokeObjectURL(objectUrl);
+}
+
 </script>
 
 <template>
-  <div class="w-9/12">
-    <Input v-model.trim="url" />
-    <Button @click="handleClick">解析</Button>
-    
+  <div class="w-9/12 m-auto mt-24">
+    <div class="flex content-center">
+      <Input v-model.trim="url" />
+      <Button @click="handleClick">解析</Button>
+    </div>
     <div>
       <ul v-for="url in downloadUrl">
-        <a :href="url.url">{{ url.part }}</a>
+        <span>{{ url.part }}</span>
+        <Button @click="download(url.url)">下载</Button>
       </ul>
     </div>
   </div>
