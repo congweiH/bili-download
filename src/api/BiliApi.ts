@@ -2,7 +2,7 @@
 export class BiliApi {
 
     // nginx 地址
-    static BASE_URL = 'http://localhost:7777';
+    static BASE_URL = 'http://116.198.47.116:7777';
 
     static async webInterface(bvid: string) {
         const res: any = await fetch(`${this.BASE_URL}/x/web-interface/view?bvid=${bvid}`, {mode: "cors"});
