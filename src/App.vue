@@ -78,7 +78,7 @@ async function download() {
 
   downloadimg.value = true;
 
-  for (const [cid, value] of videos.value) {
+  for (const [_, value] of videos.value) {
     if (value.checked) {
       try {
         await fetchAndDownloadVideo(value);
@@ -99,41 +99,43 @@ async function fetchAndDownloadVideo(video: any): Promise<void> {
     }
     const contentLength = parseInt(response.headers.get('Content-Length') || '0', 10);
     let downloaded = 0;
-    const reader = response.body.getReader();
-    const stream = new ReadableStream({
-      start(controller: ReadableStreamDefaultController) {
-        function push() {
-          reader.read().then(({ done, value }) => {
-            if (done) {
-              controller.close();
-              return;
-            }
-            controller.enqueue(value);
-            downloaded += value.length;
-            video.progress = (downloaded / contentLength * 100).toFixed(2);
-            push();
-          }).catch(error => {
-            console.error('Stream reading error:', error);
-            controller.error(error);
-          });
+    if (response.body != null) {
+      const reader = response.body.getReader();
+      const stream = new ReadableStream({
+        start(controller: ReadableStreamDefaultController) {
+          function push() {
+            reader.read().then(({ done, value }) => {
+              if (done) {
+                controller.close();
+                return;
+              }
+              controller.enqueue(value);
+              downloaded += value.length;
+              video.progress = (downloaded / contentLength * 100).toFixed(2);
+              push();
+            }).catch(error => {
+              console.error('Stream reading error:', error);
+              controller.error(error);
+            });
+          }
+          push();
         }
-        push();
-      }
-    });
+      });
 
-    const responseWithStream = new Response(stream, { headers: { 'Content-Type': 'video/mp4' } });
-    const blob = await responseWithStream.blob();
+      const responseWithStream = new Response(stream, { headers: { 'Content-Type': 'video/mp4' } });
+      const blob = await responseWithStream.blob();
 
-    console.log('完成');
+      console.log('完成');
 
-    const objectUrl = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = objectUrl;
-    link.download = 'video.mp4'; // 这里需要确保文件名和类型匹配
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(objectUrl);
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = 'video.mp4'; // 这里需要确保文件名和类型匹配
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(objectUrl);
+    }
   } catch (error) {
     console.error('Fetch error:', error);
   }
