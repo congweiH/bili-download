@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { BiliApi } from './api/BiliApi';
 import { Checkbox } from '@/components/ui/checkbox'
 import { Progress } from '@/components/ui/progress'
+import QRCode from 'qrcode';
 
 const url = ref<string>('');
 const coverUrl = ref<string>('');
@@ -15,6 +16,7 @@ const title = ref<string>('');
 const progress = ref<string>('')
 const downloadimg = ref<boolean>(false);
 const parseDone = ref<boolean>(false);
+const qrcodeurl = ref('');
 
 const videos = ref(new Map<string, any>());
 
@@ -141,9 +143,67 @@ async function fetchAndDownloadVideo(video: any): Promise<void> {
   }
 }
 
+async function login() {
+  const loginInfo = await BiliApi.getLoginUrl();
+  console.log(loginInfo);
+
+  const src = await QRCode.toDataURL(loginInfo.url);
+
+  console.log(src);
+  qrcodeurl.value = src;
+
+  getLoginStatus(loginInfo.qrcode_key);
+}
+
+async function getLoginStatus(qrCodeKey: string) {
+      let finish = false;
+        while (true) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            try {
+                const loginStatus = await BiliApi.getLoginStatus(qrCodeKey);
+                if (!loginStatus) {
+                    continue;
+                }
+                console.log(`${loginStatus.code}\n${loginStatus.message}\n${loginStatus.url}\n`);
+
+                switch (loginStatus.code) {
+                    case 86038:
+                        finish = true;
+                        break;
+                    case 86101:
+                        // 未扫码
+                        break;
+
+                    case 86090:
+                        // 已扫码，未确认
+                        break;
+                    case 0:
+                      console.log('登录成功');
+
+                      // 提取 SESSDATA
+                      const url = new URL(loginStatus.url);
+                      const params = url.searchParams;
+                      document.cookie = `SESSDATA=${params.get('SESSDATA')}`;
+
+                      await new Promise(resolve => setTimeout(resolve, 3000));
+                      break;
+                }
+                if (finish) {
+                  break;
+                }
+            } catch (error) {
+                console.error(`GetLoginStatus()发生异常: ${error}`);
+            }
+        }
+    }
+
 </script>
 
 <template>
+  <Button @click="login">登录</Button>
+
+  <img :src="qrcodeurl"  style="border:none;"></img>
+  
   <div class="w-9/12 m-auto mt-24">
     <div class="flex content-center">
       <Input v-model.trim="url" />
